@@ -1,3 +1,6 @@
+using System.Collections.Generic;
+using System.IO;
+
 namespace AdventOfCode2019.CSharp.Utils;
 
 public static class AoCLoader
