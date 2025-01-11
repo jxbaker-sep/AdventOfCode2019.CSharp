@@ -23,9 +23,55 @@ public class Day14
 
     var byOutput = reactions.ToDictionary(it => it.Output.Label, it => it);
 
-    var available = new Dictionary<string, long>();
-
     Produce(1, "FUEL", [], byOutput).Should().Be(expected);
+  }
+
+  [Theory]
+  // [InlineData("Day14.Sample.3", 82892753)]
+  // [InlineData("Day14.Sample.4", 5586022)]
+  // [InlineData("Day14.Sample.5", 460664)]
+  [InlineData("Day14", 0)]
+  public void Part2(string path, long expected)
+  {
+    var reactions = Convert(AoCLoader.LoadLines(path));
+
+    var byOutput = reactions.ToDictionary(it => it.Output.Label, it => it);
+
+    long targetOre = 1000000000000;
+    var currentOre = 0L;
+    List<long> fuelToOre = [0];
+    Dictionary<string, int> availableToFuel = [];
+    Dictionary<string, long> available = [];
+
+    for(int fuel = 1; fuel < 1_000_000 && currentOre < targetOre; fuel++)
+    {
+      Console.WriteLine($"{fuel}, {currentOre}");
+      currentOre += Produce(1, "FUEL", available, byOutput);
+      var key = available.Where(kv=>kv.Value != 0).OrderBy(kv=>kv.Key).Select(it => $"{it.Key}:{it.Value}").Join(",");
+      if (availableToFuel.TryGetValue(key, out var previous))
+      {
+        Console.WriteLine($"{fuel} {previous} {currentOre} {fuelToOre[previous]}");
+        var stepSize = fuel - previous;
+        var oreDifference = currentOre - fuelToOre[previous];
+        var moreSteps = (targetOre - currentOre) / oreDifference;
+        long totalFuel = (long)fuel + (long)moreSteps * (long)stepSize;
+        currentOre += oreDifference * moreSteps;
+        while (currentOre < targetOre) {
+          var ore = Produce(1, "FUEL", available, byOutput);
+          if (ore + currentOre > targetOre) 
+          {
+            totalFuel.Should().Be(expected);
+            return;
+          }
+          totalFuel += 1;
+          currentOre += ore;
+        }
+        throw new ApplicationException();
+      }
+      availableToFuel[key] = fuel;
+      fuelToOre.Add(currentOre);
+    }
+    throw new ApplicationException();
   }
 
   static long Produce(long needed, string label, Dictionary<string, long> available, Dictionary<string, Reaction> byOutput)
