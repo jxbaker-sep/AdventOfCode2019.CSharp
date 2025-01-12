@@ -50,12 +50,12 @@ public class Day14
   {
     string key = $"{needed} {available.OrderBy(it=>it.Key).Select(it => $"{it.Key}:{it.Value}").Join(",")}";
     if (cache.TryGetValue(key, out var cached)) return cached;
+    available = available.Clone();
     if (needed == 1)
     {
-      Dictionary<string, long> available2 = available.Clone();
-      var ore = Produce(1, "FUEL", available2, byOutput);
-      cache[key] = (ore, 1, available2);
-      return (ore, 1, available2);
+      var ore = Produce(1, "FUEL", available, byOutput);
+      cache[key] = (ore, 1, available);
+      return (ore, 1, available);
     }
     var n1 = XProduce(needed / 2 + (needed % 2), available, byOutput);
     available = n1.available;
