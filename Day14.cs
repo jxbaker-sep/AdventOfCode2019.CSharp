@@ -29,9 +29,9 @@ public class Day14
 
   [Theory]                    
   [InlineData("Day14.Sample.3", 82892753)]
-  // [InlineData("Day14.Sample.4", 5586022)]
-  // [InlineData("Day14.Sample.5", 460664)]
-  // [InlineData("Day14", 0)]
+  [InlineData("Day14.Sample.4", 5586022)]
+  [InlineData("Day14.Sample.5", 460664)]
+  [InlineData("Day14", 2595245)]
   public void Part2(string path, long expected)
   {
     var reactions = Convert(AoCLoader.LoadLines(path));
@@ -42,8 +42,7 @@ public class Day14
     
     var result = MiscUtils.BinarySearch(1000000000, (needle) => Produce(needle, "FUEL", [], byOutput) > targetOre) 
       ?? throw new ApplicationException();
-    var x = Produce(result - 1, "FUEL", [], byOutput);
-    x.Should().Be(expected);
+    (result-1).Should().Be(expected);
   }
 
   static long Produce(long needed, string label, Dictionary<string, long> available, Dictionary<string, Reaction> byOutput)
