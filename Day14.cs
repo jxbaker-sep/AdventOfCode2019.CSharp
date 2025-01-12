@@ -28,9 +28,9 @@ public class Day14
   }
 
   [Theory]                    
-  [InlineData("Day14.Sample.3", 82892753)]
+  // [InlineData("Day14.Sample.3", 82892753)]
   // [InlineData("Day14.Sample.4", 5586022)]
-  // [InlineData("Day14.Sample.5", 460664)]
+  [InlineData("Day14.Sample.5", 460664)]
   // [InlineData("Day14", 0)]
   public void Part2(string path, long expected)
   {
