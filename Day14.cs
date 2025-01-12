@@ -58,18 +58,19 @@ public class Day14
     available[label] = 0;
 
     var reaction = byOutput[label];
+    var nReactionsNeeded = (needed / reaction.Output.Count) + (needed % reaction.Output.Count > 0 ? 1 : 0);
     var ores = 0L;
     foreach(var re in reaction.Inputs)
     {
       if (re.Label == "ORE")
       {
-        ores += re.Count;
+        ores += re.Count * nReactionsNeeded;
         continue;
       }
-      ores += Produce(re.Count, re.Label, available, byOutput);
+      ores += Produce(re.Count * nReactionsNeeded, re.Label, available, byOutput);
     }
-    available[label] = reaction.Output.Count;
-    return ores + Produce(needed, label, available, byOutput);
+    available[label] = reaction.Output.Count * nReactionsNeeded - needed;
+    return ores;
   }
 
   public record Reactant(long Count, string Label);
