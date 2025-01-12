@@ -28,9 +28,9 @@ public class Day14
   }
 
   [Theory]                    
-  // [InlineData("Day14.Sample.3", 82892753)]
+  [InlineData("Day14.Sample.3", 82892753)]
   // [InlineData("Day14.Sample.4", 5586022)]
-  [InlineData("Day14.Sample.5", 460664)]
+  // [InlineData("Day14.Sample.5", 460664)]
   // [InlineData("Day14", 0)]
   public void Part2(string path, long expected)
   {
@@ -40,39 +40,10 @@ public class Day14
 
     long targetOre = 1000000000000;
     
-    var result = MiscUtils.BinarySearch(1000000000, (needle) => XProduce(needle, [], byOutput).ore > targetOre) ?? throw new ApplicationException();
-    var x = XProduce(result-1, [], byOutput);
-    x.fuel.Should().Be(expected);
-  }
-
-  readonly Dictionary<string, (long ore, long fuel, Dictionary<string, long> available)> cache = [];
-  (long ore, long fuel, Dictionary<string, long> available) XProduce(long needed, Dictionary<string, long> available, Dictionary<string, Reaction> byOutput)
-  {
-    string key = $"{needed} {available.OrderBy(it=>it.Key).Select(it => $"{it.Key}:{it.Value}").Join(",")}";
-    if (cache.TryGetValue(key, out var cached)) return cached;
-    available = available.Clone();
-    if (needed == 1)
-    {
-      var ore = Produce(1, "FUEL", available, byOutput);
-      cache[key] = (ore, 1, available);
-      return (ore, 1, available);
-    }
-    var n1 = XProduce(needed / 2 + (needed % 2), available, byOutput);
-    available = n1.available;
-    var netFuel = n1.fuel;
-    var netOre = n1.ore;
-    var n2 = XProduce(needed - n1.fuel, available, byOutput);
-    netFuel += n2.fuel;
-    netOre += n2.ore;
-    available = n2.available;
-    // var clone = available.Clone();
-    // while (Produce(1, "FUEL", clone, byOutput) == 0)
-    // { // TODO: might be never hit?
-    //   available = clone;
-    //   netFuel += 1;
-    // }
-    cache[key] = (netOre, netFuel, available);
-    return cache[key];
+    var result = MiscUtils.BinarySearch(1000000000, (needle) => Produce(needle, "FUEL", [], byOutput) > targetOre) 
+      ?? throw new ApplicationException();
+    var x = Produce(result - 1, "FUEL", [], byOutput);
+    x.Should().Be(expected);
   }
 
   static long Produce(long needed, string label, Dictionary<string, long> available, Dictionary<string, Reaction> byOutput)
