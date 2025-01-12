@@ -6,14 +6,14 @@ public static class MiscUtils
     for(long i = start; i <= stop; i++) yield return i;
   }
 
-  public static int? BinarySearch(int maxValue, Func<int, bool> action) {
-    int? knownMin = null;
-    int? knownMax = null;
+  public static long? BinarySearch(long maxValue, Func<long, bool> action) {
+    long? knownMin = null;
+    long? knownMax = null;
 
     while (true) {
       var useMin = knownMin ?? 0;
       var useMax = knownMax ?? maxValue + 1;
-      int attempt = (useMin + useMax) / 2;
+      long attempt = (useMin + useMax) / 2;
       if (action(attempt)) {
         if (attempt == 0) return 0;
         if (knownMin == attempt - 1) return attempt;

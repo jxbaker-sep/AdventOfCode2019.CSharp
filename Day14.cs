@@ -1,3 +1,4 @@
+using System.Net.Http.Headers;
 using AdventOfCode2019.CSharp.Utils;
 using FluentAssertions;
 using Parser;
@@ -26,11 +27,11 @@ public class Day14
     Produce(1, "FUEL", [], byOutput).Should().Be(expected);
   }
 
-  [Theory]
-  // [InlineData("Day14.Sample.3", 82892753)]
+  [Theory]                    
+  [InlineData("Day14.Sample.3", 82892753)]
   // [InlineData("Day14.Sample.4", 5586022)]
   // [InlineData("Day14.Sample.5", 460664)]
-  [InlineData("Day14", 0)]
+  // [InlineData("Day14", 0)]
   public void Part2(string path, long expected)
   {
     var reactions = Convert(AoCLoader.LoadLines(path));
@@ -38,40 +39,40 @@ public class Day14
     var byOutput = reactions.ToDictionary(it => it.Output.Label, it => it);
 
     long targetOre = 1000000000000;
-    var currentOre = 0L;
-    List<long> fuelToOre = [0];
-    Dictionary<string, int> availableToFuel = [];
-    Dictionary<string, long> available = [];
+    
+    var result = MiscUtils.BinarySearch(1000000000, (needle) => XProduce(needle, [], byOutput).ore > targetOre) ?? throw new ApplicationException();
+    var x = XProduce(result-1, [], byOutput);
+    x.fuel.Should().Be(expected);
+  }
 
-    for(int fuel = 1; fuel < 1_000_000 && currentOre < targetOre; fuel++)
+  readonly Dictionary<string, (long ore, long fuel, Dictionary<string, long> available)> cache = [];
+  (long ore, long fuel, Dictionary<string, long> available) XProduce(long needed, Dictionary<string, long> available, Dictionary<string, Reaction> byOutput)
+  {
+    string key = $"{needed} {available.OrderBy(it=>it.Key).Select(it => $"{it.Key}:{it.Value}").Join(",")}";
+    if (cache.TryGetValue(key, out var cached)) return cached;
+    if (needed == 1)
     {
-      Console.WriteLine($"{fuel}, {currentOre}");
-      currentOre += Produce(1, "FUEL", available, byOutput);
-      var key = available.Where(kv=>kv.Value != 0).OrderBy(kv=>kv.Key).Select(it => $"{it.Key}:{it.Value}").Join(",");
-      if (availableToFuel.TryGetValue(key, out var previous))
-      {
-        Console.WriteLine($"{fuel} {previous} {currentOre} {fuelToOre[previous]}");
-        var stepSize = fuel - previous;
-        var oreDifference = currentOre - fuelToOre[previous];
-        var moreSteps = (targetOre - currentOre) / oreDifference;
-        long totalFuel = (long)fuel + (long)moreSteps * (long)stepSize;
-        currentOre += oreDifference * moreSteps;
-        while (currentOre < targetOre) {
-          var ore = Produce(1, "FUEL", available, byOutput);
-          if (ore + currentOre > targetOre) 
-          {
-            totalFuel.Should().Be(expected);
-            return;
-          }
-          totalFuel += 1;
-          currentOre += ore;
-        }
-        throw new ApplicationException();
-      }
-      availableToFuel[key] = fuel;
-      fuelToOre.Add(currentOre);
+      Dictionary<string, long> available2 = available.Clone();
+      var ore = Produce(1, "FUEL", available2, byOutput);
+      cache[key] = (ore, 1, available2);
+      return (ore, 1, available2);
     }
-    throw new ApplicationException();
+    var n1 = XProduce(needed / 2 + (needed % 2), available, byOutput);
+    available = n1.available;
+    var netFuel = n1.fuel;
+    var netOre = n1.ore;
+    var n2 = XProduce(needed - n1.fuel, available, byOutput);
+    netFuel += n2.fuel;
+    netOre += n2.ore;
+    available = n2.available;
+    // var clone = available.Clone();
+    // while (Produce(1, "FUEL", clone, byOutput) == 0)
+    // { // TODO: might be never hit?
+    //   available = clone;
+    //   netFuel += 1;
+    // }
+    cache[key] = (netOre, netFuel, available);
+    return cache[key];
   }
 
   static long Produce(long needed, string label, Dictionary<string, long> available, Dictionary<string, Reaction> byOutput)
