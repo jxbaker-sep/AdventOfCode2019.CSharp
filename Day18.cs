@@ -36,7 +36,12 @@ public class Day18
   {
     var allKeys = grid.Where(it => IsKey(it.Value)).Select(it => (position: it.Key, key: it.Value)).ToList();
     var goal = allKeys.Count;
-    long salt(Point position, HashSet<char> k2) { return goal - k2.Count; }
+    long salt(Point position, HashSet<char> k2) { 
+      var remainder = allKeys.Where(k3 => !k2.Contains(k3.key)).Select(it => it.position).ToList();
+      if (remainder.Count == 0) return 0;
+      if (remainder.Count == 1) return position.ManhattanDistance(remainder[0]);
+      return remainder.Pairs().Min(pair => pair.First.ManhattanDistance(pair.Second) + Math.Min(position.ManhattanDistance(pair.First), position.ManhattanDistance(pair.Second)));
+    }
     PriorityQueue<(long steps, HashSet<char> keys, Point position)> open = new((it) => it.steps + salt(it.position, it.keys));
     open.Enqueue((0, [], start));
     Dictionary<string, long> closed = [];
