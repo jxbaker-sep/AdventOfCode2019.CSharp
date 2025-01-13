@@ -19,31 +19,33 @@ public class Day18
   static bool IsDoor(char c) => char.IsUpper(c);
 
   [Theory]
-  // [InlineData("Day18.Sample.1", 8)]
-  // [InlineData("Day18.Sample.2", 86)]
-  // [InlineData("Day18.Sample.3", 132)]
-  // [InlineData("Day18.Sample.4", 136)]
-  // [InlineData("Day18.Sample.5", 81)]
-  [InlineData("Day18", 0)]
+  [InlineData("Day18.Sample.1", 8)]
+  [InlineData("Day18.Sample.2", 86)]
+  [InlineData("Day18.Sample.3", 132)]
+  [InlineData("Day18.Sample.4", 136)]
+  [InlineData("Day18.Sample.5", 81)]
+  [InlineData("Day18", 4954)]
   public void Part1(string path, long expected)
   {
     var grid = Convert(AoCLoader.LoadLines(path));
-    var start = grid.First(kv => kv.Value == '@').Key;
-    CollectKeys(grid, start).Should().Be(expected);
+    CollectKeys(grid).Should().Be(expected);
   }
 
-  private static long CollectKeys_old(Dictionary<Point, char> grid, Point start)
+  private static long CollectKeys(Dictionary<Point, char> grid)
   {
+    var robots = grid.Where(kv => kv.Value == '@').Select(it => it.Key).ToList();
     var allKeys = grid.Where(it => IsKey(it.Value)).Select(it => (position: it.Key, key: it.Value)).ToList();
     var goal = allKeys.Count;
-    long salt(Point position, HashSet<char> k2) { 
+    long heuristic(Point position, HashSet<char> k2) { 
       // return goal - k2.Count;
       var remainder = allKeys.Where(k3 => !k2.Contains(k3.key)).Select(it => it.position).ToList();
       if (remainder.Count == 0) return 0;
       if (remainder.Count == 1) return position.ManhattanDistance(remainder[0]);
-      return remainder.Pairs().Min(pair => pair.First.ManhattanDistance(pair.Second) + Math.Min(position.ManhattanDistance(pair.First), position.ManhattanDistance(pair.Second)));
+      // return remainder.Pairs()
+      //   .Min(pair => pair.First.ManhattanDistance(pair.Second) + Math.Min(position.ManhattanDistance(pair.First), position.ManhattanDistance(pair.Second)));
+      return remainder.Aggregate((start, 0L), (accum, n) => {return (start: n, accum.start.ManhattanDistance(n) + accum.Item2);}).Item2;
     }
-    PriorityQueue<(long steps, HashSet<char> keys, Point position)> open = new((it) => it.steps + salt(it.position, it.keys));
+    PriorityQueue<(long steps, HashSet<char> keys, Point position)> open = new((it) => it.steps + heuristic(it.position, it.keys));
     open.Enqueue((0, [], start));
     Dictionary<Point, List<(HashSet<char> keys, long steps)>> visited = [];
     while (open.TryDequeue(out var current))
