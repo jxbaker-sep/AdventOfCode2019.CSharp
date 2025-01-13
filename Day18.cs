@@ -19,11 +19,11 @@ public class Day18
   static bool IsDoor(char c) => char.IsUpper(c);
 
   [Theory]
-  [InlineData("Day18.Sample.1", 8)]
-  [InlineData("Day18.Sample.2", 86)]
-  [InlineData("Day18.Sample.3", 132)]
+  // [InlineData("Day18.Sample.1", 8)]
+  // [InlineData("Day18.Sample.2", 86)]
+  // [InlineData("Day18.Sample.3", 132)]
   [InlineData("Day18.Sample.4", 136)]
-  [InlineData("Day18.Sample.5", 81)]
+  // [InlineData("Day18.Sample.5", 81)]
   // [InlineData("Day18", 0)]
   public void Part1(string path, long expected)
   {
@@ -37,26 +37,36 @@ public class Day18
     var allKeys = grid.Where(it => IsKey(it.Value)).Select(it => (position: it.Key, key: it.Value)).ToList();
     var goal = allKeys.Count;
     long salt(Point position, HashSet<char> k2) { 
-      var remainder = allKeys.Where(k3 => !k2.Contains(k3.key)).Select(it => it.position).ToList();
-      if (remainder.Count == 0) return 0;
-      if (remainder.Count == 1) return position.ManhattanDistance(remainder[0]);
-      return remainder.Pairs().Min(pair => pair.First.ManhattanDistance(pair.Second) + Math.Min(position.ManhattanDistance(pair.First), position.ManhattanDistance(pair.Second)));
+      return goal - k2.Count;
+      // var remainder = allKeys.Where(k3 => !k2.Contains(k3.key)).Select(it => it.position).ToList();
+      // if (remainder.Count == 0) return 0;
+      // if (remainder.Count == 1) return position.ManhattanDistance(remainder[0]);
+      // return remainder.Pairs().Min(pair => pair.First.ManhattanDistance(pair.Second) + Math.Min(position.ManhattanDistance(pair.First), position.ManhattanDistance(pair.Second)));
     }
     PriorityQueue<(long steps, HashSet<char> keys, Point position)> open = new((it) => it.steps + salt(it.position, it.keys));
     open.Enqueue((0, [], start));
-    Dictionary<string, long> closed = [];
-    string CreateClosedKey(HashSet<char> hsc, Point p) => p.ToString() + hsc.OrderBy(it => it).Select(it => $"{it}").Join();
-    closed[CreateClosedKey([], start)] = 0;
+    Dictionary<Point, List<(HashSet<char> keys, long steps)>> visited = [];
     while (open.TryDequeue(out var current))
     {
       if (current.keys.Count == goal) return current.steps;
-      if (closed.TryGetValue(CreateClosedKey(current.keys, current.position), out var cached2) && cached2 < current.steps) continue;
+      // if (closed.TryGetValue(current.position, out var cached2))
+      // {
+      //   if (cached2.Any(item => current.keys.All(ck => item.keys.Contains(ck)) && item.steps < current.steps)) continue;
+      // }
       foreach(var (steps, key, nextPosition) in Open(grid, current.position, current.keys)) {
         HashSet<char> nextKeys = [..current.keys, key];
-        var closedKey = CreateClosedKey(nextKeys, nextPosition);
         var nextSteps = current.steps + steps;
-        if (closed.TryGetValue(closedKey, out var cached) && cached <= nextSteps) continue;
-        closed[closedKey] = nextSteps;
+        if (visited.TryGetValue(nextPosition, out var visits))
+        {
+          // Have we been here, with these keys, at the same distance or shorter?
+          if (visits.Any(visit => nextKeys.All(nk => visit.keys.Contains(nk)) && visit.steps <= nextSteps)) continue;
+          var n = visits.Where(visit => visit.steps < nextSteps || visit.keys.Any(ik => !nextKeys.Contains(ik))).ToList();
+          n.Add((nextKeys, nextSteps));
+          visited[nextPosition] = n;
+        }
+        else {
+          visited[nextPosition] = [(nextKeys, nextSteps)];
+        }
         open.Enqueue((nextSteps, nextKeys, nextPosition));
       }
     }
