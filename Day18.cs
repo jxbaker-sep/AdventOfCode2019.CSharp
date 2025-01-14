@@ -1,6 +1,8 @@
 using AdventOfCode2019.CSharp.Utils;
 using FluentAssertions;
+using Microsoft.VisualStudio.TestPlatform.PlatformAbstractions;
 using Parser;
+using Utils;
 
 namespace AdventOfCode2018.CSharp;
 using Keyset = ulong;
@@ -14,12 +16,12 @@ public class Day18
   static bool IsDoor(char c) => char.IsUpper(c);
 
   [Theory]
-  [InlineData("Day18.Sample.1", 8)]
-  [InlineData("Day18.Sample.2", 86)]
-  [InlineData("Day18.Sample.3", 132)]
-  [InlineData("Day18.Sample.4", 136)] // 4s
-  [InlineData("Day18.Sample.5", 81)] 
-  [InlineData("Day18", 4954)] // 39s
+  // [InlineData("Day18.Sample.1", 8)]
+  // [InlineData("Day18.Sample.2", 86)]
+  // [InlineData("Day18.Sample.3", 132)]
+  // [InlineData("Day18.Sample.4", 136)] // 4s, 2s
+  // [InlineData("Day18.Sample.5", 81)] 
+  [InlineData("Day18", 4954)] // 39s, 3m, 55s; 40s w/ bitset & simple heuristic ;
   public void Part1(string path, long expected)
   {
     var grid = Convert(AoCLoader.LoadLines(path));
@@ -31,13 +33,15 @@ public class Day18
     var start = grid.Where(kv => kv.Value == '@').Select(it => it.Key).Single();
     var allKeys = grid.Values.Where(it => IsKey(it)).Aggregate(EmptyKeyset, KeysetAdd);
     var goal = KeysetCount(allKeys);
+    var keyToPosition = grid.Where(it => IsKey(it.Value)).ToDictionary(it => it.Value, it => it.Key);
     long heuristic(Point position, Keyset keyset) { 
       return goal - KeysetCount(keyset);
-      // var remainder = allKeys.Where(k3 => !k2.Contains(k3.key)).Select(it => it.position).ToList();
+      // var remainder = KeysetEnumerate(KeysetExcept(allKeys, keyset)).Select(it => keyToPosition[it]).Take(1).ToList();
       // if (remainder.Count == 0) return 0;
+      // return remainder[0].ManhattanDistance(position);
       // if (remainder.Count == 1) return position.ManhattanDistance(remainder[0]);
       // return remainder.Pairs()
-      //   .Min(pair => pair.First.ManhattanDistance(pair.Second) + Math.Min(position.ManhattanDistance(pair.First), position.ManhattanDistance(pair.Second)));
+      //   .Max(pair => pair.First.ManhattanDistance(pair.Second) + Math.Min(position.ManhattanDistance(pair.First), position.ManhattanDistance(pair.Second)));
       // return remainder.Aggregate((position, 0L), (accum, n) => {return (n, accum.position.ManhattanDistance(n) + accum.Item2);}).Item2;
     }
     PriorityQueue<(long steps, Keyset keyset, Point position)> open = new((it) => it.steps + heuristic(it.position, it.keyset));
@@ -114,6 +118,15 @@ public class Day18
       keyset >>= 1;
     }
     return result;
+  }
+
+  public static IEnumerable<char> KeysetEnumerate(ulong keyset) {
+    char result = 'a';
+    while (keyset > 0) {
+      if ((keyset & 1ul) == 1) yield return result;
+      result++;
+      keyset >>= 1;
+    }
   }
 
 
