@@ -1,18 +1,13 @@
-using System.Configuration;
-using System.Net.Http.Headers;
 using AdventOfCode2019.CSharp.Utils;
 using FluentAssertions;
-using Microsoft.VisualBasic;
 using Parser;
-using Utils;
-using Xunit;
-using P = Parser.ParserBuiltins;
 
 namespace AdventOfCode2018.CSharp;
+using Keyset = ulong;
 
 public class Day18
 {
-
+  const ulong EmptyKeyset = 0ul;
   const char Wall = '#';
 
   static bool IsKey(char c) => char.IsLower(c);
@@ -22,9 +17,9 @@ public class Day18
   [InlineData("Day18.Sample.1", 8)]
   [InlineData("Day18.Sample.2", 86)]
   [InlineData("Day18.Sample.3", 132)]
-  [InlineData("Day18.Sample.4", 136)]
-  [InlineData("Day18.Sample.5", 81)]
-  [InlineData("Day18", 4954)]
+  [InlineData("Day18.Sample.4", 136)] // 4s
+  [InlineData("Day18.Sample.5", 81)] 
+  [InlineData("Day18", 4954)] // 39s
   public void Part1(string path, long expected)
   {
     var grid = Convert(AoCLoader.LoadLines(path));
@@ -33,49 +28,50 @@ public class Day18
 
   private static long CollectKeys(Dictionary<Point, char> grid)
   {
-    var robots = grid.Where(kv => kv.Value == '@').Select(it => it.Key).ToList();
-    var allKeys = grid.Where(it => IsKey(it.Value)).Select(it => (position: it.Key, key: it.Value)).ToList();
-    var goal = allKeys.Count;
-    long heuristic(Point position, HashSet<char> k2) { 
-      // return goal - k2.Count;
-      var remainder = allKeys.Where(k3 => !k2.Contains(k3.key)).Select(it => it.position).ToList();
-      if (remainder.Count == 0) return 0;
-      if (remainder.Count == 1) return position.ManhattanDistance(remainder[0]);
+    var start = grid.Where(kv => kv.Value == '@').Select(it => it.Key).Single();
+    var allKeys = grid.Values.Where(it => IsKey(it)).Aggregate(EmptyKeyset, KeysetAdd);
+    var goal = KeysetCount(allKeys);
+    long heuristic(Point position, Keyset keyset) { 
+      return goal - KeysetCount(keyset);
+      // var remainder = allKeys.Where(k3 => !k2.Contains(k3.key)).Select(it => it.position).ToList();
+      // if (remainder.Count == 0) return 0;
+      // if (remainder.Count == 1) return position.ManhattanDistance(remainder[0]);
       // return remainder.Pairs()
       //   .Min(pair => pair.First.ManhattanDistance(pair.Second) + Math.Min(position.ManhattanDistance(pair.First), position.ManhattanDistance(pair.Second)));
-      return remainder.Aggregate((start, 0L), (accum, n) => {return (start: n, accum.start.ManhattanDistance(n) + accum.Item2);}).Item2;
+      // return remainder.Aggregate((position, 0L), (accum, n) => {return (n, accum.position.ManhattanDistance(n) + accum.Item2);}).Item2;
     }
-    PriorityQueue<(long steps, HashSet<char> keys, Point position)> open = new((it) => it.steps + heuristic(it.position, it.keys));
-    open.Enqueue((0, [], start));
-    Dictionary<Point, List<(HashSet<char> keys, long steps)>> visited = [];
+    PriorityQueue<(long steps, Keyset keyset, Point position)> open = new((it) => it.steps + heuristic(it.position, it.keyset));
+    open.Enqueue((0, EmptyKeyset, start));
+    Dictionary<Point, List<(Keyset keyset, long steps)>> visited = [];
     while (open.TryDequeue(out var current))
     {
-      if (current.keys.Count == goal) return current.steps;
-      if (visited.TryGetValue(current.position, out var cached2))
-      {
-        if (cached2.Any(item => current.keys.All(ck => item.keys.Contains(ck)) && item.steps < current.steps)) continue;
-      }
-      foreach(var (steps, key, nextPosition) in Open(grid, current.position, current.keys)) {
-        HashSet<char> nextKeys = [..current.keys, key];
+      if (KeysetCount(current.keyset) == goal) return current.steps;
+      // if (visited.TryGetValue(current.position, out var cached2))
+      // {
+      //   if (cached2.Any(item => current.keys.All(ck => item.keys.Contains(ck)) && item.steps < current.steps)) continue;
+      // }
+      foreach(var (steps, key, nextPosition) in Open(grid, current.position, current.keyset)) {
+        Keyset nextKeyset = KeysetAdd(current.keyset, key);
         var nextSteps = current.steps + steps;
         if (visited.TryGetValue(nextPosition, out var visits))
         {
           // Have we been here, with these keys, at the same distance or shorter?
-          if (visits.Any(visit => nextKeys.All(nk => visit.keys.Contains(nk)) && visit.steps <= nextSteps)) continue;
-          var n = visits.Where(visit => visit.steps < nextSteps || visit.keys.Any(ik => !nextKeys.Contains(ik))).ToList();
-          n.Add((nextKeys, nextSteps));
+          if (visits.Any(visit => KeysetIsSupersetOf(visit.keyset, nextKeyset) && visit.steps <= nextSteps)) continue;
+          var n = visits.Where(visit => visit.steps < nextSteps || !KeysetIsSupersetOf(nextKeyset, visit.keyset)).ToList();
+          n.Add((nextKeyset, nextSteps));
           visited[nextPosition] = n;
         }
         else {
-          visited[nextPosition] = [(nextKeys, nextSteps)];
+          visited[nextPosition] = [(nextKeyset, nextSteps)];
         }
-        open.Enqueue((nextSteps, nextKeys, nextPosition));
+        open.Enqueue((nextSteps, nextKeyset, nextPosition));
       }
     }
     throw new ApplicationException();
   }
 
-  private static IEnumerable<(long steps, char key, Point position)> Open(Dictionary<Point, char> grid, Point start, HashSet<char> haveKeys)
+  
+  private static IEnumerable<(long steps, char key, Point position)> Open(Dictionary<Point, char> grid, Point start, ulong keyset)
   {
     Queue<Point> open = [];
     open.Enqueue(start);
@@ -87,14 +83,39 @@ public class Day18
       foreach(var neighbor in current.CardinalNeighbors()) {
         var c = grid[neighbor];
         if (c == Wall) continue;
-        if (IsDoor(c) && !haveKeys.Contains(char.ToLower(c))) continue;
+        if (IsDoor(c) && !KeysetContainsDoor(keyset, c)) continue;
         if (closed.ContainsKey(neighbor)) continue;
         closed[neighbor] = n + 1;
         open.Enqueue(neighbor);
-        if (IsKey(c) && !haveKeys.Contains(c)) yield return (n+1, c, neighbor);
+        if (IsKey(c) && !KeysetContainsKey(keyset, c)) yield return (n+1, c, neighbor);
       }
     }
   }
+
+  public static ulong KeysetAdd(ulong keyset, char key) => keyset | (1ul << (key - 'a'));
+  public static bool KeysetContainsDoor(ulong keyset, char door) => (keyset & (1ul << (door - 'A'))) > 0;
+  
+  public static bool KeysetIsSupersetOf(ulong keyset, ulong subset) => (keyset & subset) == subset;
+  public static bool KeysetContainsKey(ulong keyset, char key) => (keyset & (1ul << (key - 'a'))) > 0;
+
+  public static ulong KeysetExcept(ulong keyset, ulong subset) {
+    ulong output = EmptyKeyset;
+    for(var n = 0; n < 32; n++) {
+      ulong mask = 1ul << n;
+      if (((keyset & mask) == 1) && ((subset & mask) == 0)) output &= mask;
+    }
+    return output;
+  }
+
+  public static int KeysetCount(ulong keyset) {
+    int result = 0;
+    while (keyset > 0) {
+      if ((keyset & 1ul) == 1) result += 1;
+      keyset >>= 1;
+    }
+    return result;
+  }
+
 
 
   private static Dictionary<Point, char> Convert(List<string> data) => data.Gridify();
