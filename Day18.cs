@@ -19,12 +19,64 @@ public class Day18
   [InlineData("Day18.Sample.1", 8)]
   [InlineData("Day18.Sample.2", 86)]
   [InlineData("Day18.Sample.3", 132)]
-  [InlineData("Day18.Sample.4", 136)] // 4s, 2s
+  [InlineData("Day18.Sample.4", 136)]
   [InlineData("Day18.Sample.5", 81)] 
-  [InlineData("Day18", 4954)] // 39s, 3m, 55s; 40s w/ bitset & simple heuristic ;
+  [InlineData("Day18", 4954)]
   public void Part1(string path, long expected)
   {
     var grid = Convert(AoCLoader.LoadLines(path));
+    CollectKeys(grid).Should().Be(expected);
+  }
+
+  [Theory]
+  [InlineData("Day18", 2334L)] // 2m 30s test run
+  public void Part2(string path, long expected)
+  {
+    var grid = Convert(AoCLoader.LoadLines(path));
+    var start = grid.Where(it => it.Value == '@').Single().Key;
+    foreach(var point in start.CardinalNeighbors().Append(start)) {
+      grid[point] = Wall;
+    }
+    foreach(var point in start.InterCardinalNeighbors()) {
+      grid[point] = '@';
+    }
+    CollectKeys(grid).Should().Be(expected);
+  }
+  
+  [Theory]
+  [InlineData(@"#######
+#a.#Cd#
+##@#@##
+#######
+##@#@##
+#cB#Ab#
+#######", 8)]
+  [InlineData(@"###############
+#d.ABC.#.....a#
+######@#@######
+###############
+######@#@######
+#b.....#.....c#
+###############", 24)]
+  [InlineData(@"#############
+#DcBa.#.GhKl#
+#.###@#@#I###
+#e#d#####j#k#
+###C#@#@###J#
+#fEbA.#.FgHi#
+#############", 32)]
+  [InlineData(@"#############
+#g#f.D#..h#l#
+#F###e#E###.#
+#dCba@#@BcIJ#
+#############
+#nK.L@#@G...#
+#M###N#H###.#
+#o#m..#i#jk.#
+#############", 72)]
+  public void Sanity(string data, long expected)
+  {
+    var grid = data.Split("\n").ToList().Gridify();
     CollectKeys(grid).Should().Be(expected);
   }
 
@@ -126,6 +178,20 @@ public class Day18
       keyset >>= 1;
     }
     return result;
+  }
+
+  [Theory]
+  [InlineData("abc", "", true)]
+  [InlineData("", "", true)]
+  [InlineData("abc", "a", true)]
+  [InlineData("abc", "abc", true)]
+  [InlineData("abc", "abcd", false)]
+  [InlineData("abc", "z", false)]
+  public void SupersetTest(string string1, string string2, bool expected)
+  {
+    var ks1 = string1.Aggregate(EmptyKeyset, KeysetAdd);
+    var ks2 = string2.Aggregate(EmptyKeyset, KeysetAdd);
+    KeysetIsSupersetOf(ks1, ks2).Should().Be(expected);
   }
 
   public static IEnumerable<char> KeysetEnumerate(ulong keyset) {
