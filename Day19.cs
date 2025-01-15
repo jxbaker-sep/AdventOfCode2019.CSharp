@@ -8,7 +8,7 @@ using Xunit.Sdk;
 namespace AdventOfCode2019.CSharp;
 using Keyset = ulong;
 
-public class Day18
+public class Day19
 {
   const Keyset EmptyKeyset = 0ul;
   const char Wall = '#';
@@ -17,12 +17,12 @@ public class Day18
   static bool IsDoor(char c) => char.IsUpper(c);
 
   [Theory]
-  [InlineData("Day18.Sample.1", 8)]
-  [InlineData("Day18.Sample.2", 86)]
-  [InlineData("Day18.Sample.3", 132)]
-  [InlineData("Day18.Sample.4", 136)]
-  [InlineData("Day18.Sample.5", 81)]
-  [InlineData("Day18", 4954)]
+  [InlineData("Day19.Sample.1", 8)]
+  [InlineData("Day19.Sample.2", 86)]
+  [InlineData("Day19.Sample.3", 132)]
+  [InlineData("Day19.Sample.4", 136)]
+  [InlineData("Day19.Sample.5", 81)]
+  [InlineData("Day19", 4954)]
   public void Part1(string path, long expected)
   {
     var grid = Convert(AoCLoader.LoadLines(path));
@@ -30,7 +30,7 @@ public class Day18
   }
 
   [Theory]
-  [InlineData("Day18", 2334L)] // 2m 30s test run
+  [InlineData("Day19", 2334L)] // 2m 30s test run
   public void Part2(string path, long expected)
   {
     var grid = Convert(AoCLoader.LoadLines(path));
