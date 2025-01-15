@@ -42,6 +42,32 @@ class IntCodeComputer(List<long> Program)
           output(Read(mode1, PC+1));
           PC += 2;
           break;
+        case 5: {
+          var param1 = Read(mode1, PC+1);
+          if (param1 != 0) PC = (int)Read(mode2, PC+2);
+          else PC += 3;
+          break;
+        }
+        case 6: {
+          var param1 = Read(mode1, PC+1);
+          if (param1 == 0) PC = (int)Read(mode2, PC+2);
+          else PC += 3;
+          break;
+        }
+        case 7: {
+          var param1 = Read(mode1, PC+1);
+          var param2 = Read(mode2, PC+2);
+          Program[(int)Program[PC + 3]] = param1 < param2 ? 1 : 0;
+          PC += 4;
+          break;
+        }
+        case 8: {
+          var param1 = Read(mode1, PC+1);
+          var param2 = Read(mode2, PC+2);
+          Program[(int)Program[PC + 3]] = param1 == param2 ? 1 : 0;
+          PC += 4;
+          break;
+        }
         default:
           throw new ApplicationException();
       }
