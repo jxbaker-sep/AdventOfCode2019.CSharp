@@ -6,7 +6,7 @@ using Utils;
 using Xunit;
 using P = Parser.ParserBuiltins;
 
-namespace AdventOfCode2018.CSharp;
+namespace AdventOfCode2019.CSharp;
 
 public class Day16
 {
