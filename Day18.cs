@@ -10,7 +10,7 @@ using Keyset = ulong;
 
 public class Day18
 {
-  const ulong EmptyKeyset = 0ul;
+  const Keyset EmptyKeyset = 0ul;
   const char Wall = '#';
 
   static bool IsKey(char c) => char.IsLower(c);
@@ -163,24 +163,24 @@ public class Day18
     }
   }
 
-  public static ulong KeysetAdd(ulong keyset, char key) => keyset | 1ul << key - 'a';
-  public static bool KeysetContainsDoor(ulong keyset, char door) => (keyset & 1ul << door - 'A') > 0;
+  public static Keyset KeysetAdd(Keyset keyset, char key) => keyset | 1ul << key - 'a';
+  public static bool KeysetContainsDoor(Keyset keyset, char door) => (keyset & 1ul << door - 'A') > 0;
 
-  public static bool KeysetIsSupersetOf(ulong keyset, ulong subset) => (keyset & subset) == subset;
-  public static bool KeysetContainsKey(ulong keyset, char key) => (keyset & 1ul << key - 'a') > 0;
+  public static bool KeysetIsSupersetOf(Keyset keyset, Keyset subset) => (keyset & subset) == subset;
+  public static bool KeysetContainsKey(Keyset keyset, char key) => (keyset & 1ul << key - 'a') > 0;
 
-  public static ulong KeysetExcept(ulong keyset, ulong subset)
+  public static Keyset KeysetExcept(Keyset keyset, Keyset subset)
   {
-    ulong output = EmptyKeyset;
+    Keyset output = EmptyKeyset;
     for (var n = 0; n < 32; n++)
     {
-      ulong mask = 1ul << n;
+      Keyset mask = 1ul << n;
       if ((keyset & mask) > 0 && (subset & mask) == 0) output |= mask;
     }
     return output;
   }
 
-  public static int KeysetCount(ulong keyset)
+  public static int KeysetCount(Keyset keyset)
   {
     int result = 0;
     while (keyset > 0)
@@ -205,7 +205,7 @@ public class Day18
     KeysetIsSupersetOf(ks1, ks2).Should().Be(expected);
   }
 
-  public static IEnumerable<char> KeysetEnumerate(ulong keyset)
+  public static IEnumerable<char> KeysetEnumerate(Keyset keyset)
   {
     char result = 'a';
     while (keyset > 0)
