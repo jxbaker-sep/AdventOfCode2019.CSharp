@@ -1,14 +1,9 @@
 using AdventOfCode2019.CSharp.Utils;
 using FluentAssertions;
-using Microsoft.VisualStudio.TestPlatform.PlatformAbstractions;
 using Parser;
-using Utils;
-using Xunit.Sdk;
 using P = Parser.ParserBuiltins;
 
 namespace AdventOfCode2019.CSharp;
-using Keyset = ulong;
-
 public class Day02
 {
   [Theory]
@@ -20,6 +15,26 @@ public class Day02
     icc.Program[2] = 2;
     icc.Run();
     icc.Program[0].Should().Be(expected);
+  }
+
+  [Theory]
+  [InlineData("Day02", 2552)]
+  public void Part2(string path, int expected)
+  {
+    var program = Convert(AoCLoader.LoadFile(path));
+    foreach(var noun in Enumerable.Range(0, 100))
+    foreach(var verb in Enumerable.Range(0, 100))
+    {
+      var icc = new IntCodeComputer(program.ToList());
+      icc.Program[1] = noun;
+      icc.Program[2] = verb;
+      icc.Run();
+      if (icc.Program[0] == 19690720)
+      {
+        (100 * noun + verb).Should().Be(expected);
+        return;
+      }
+    }
   }
 
   [Theory]
