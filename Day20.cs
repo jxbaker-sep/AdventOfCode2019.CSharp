@@ -49,8 +49,8 @@ public class Day20
 
   [Theory]
   [InlineData("Day20.Sample.1", 26)]
-  // [InlineData("Day20.Sample.3", 396)]
-  // [InlineData("Day20", 0)]
+  [InlineData("Day20.Sample.3", 396)]
+  [InlineData("Day20", 7056)] 
   public void Part2(string path, long expected)
   {
     var maze = Convert(AoCLoader.LoadFile(path));
@@ -58,9 +58,8 @@ public class Day20
     List<Edge> upEdges = [];
     foreach(var label in maze.PortalExits.Values.Distinct().Select(it => it.Label))
     {
-      var nodes = CreateSimpleNodesPairs(label, maze);
-      downEdges.AddRange(nodes);
-      upEdges.AddRange(nodes.Where(it => it.GoingDown).Select(it => new Edge(it.Second, it.First, false, it.Steps)));
+      downEdges.AddRange(CreateSimpleNodesPairs(label, maze, true));
+      upEdges.AddRange(CreateSimpleNodesPairs(label, maze, false));
     }
     var downMap = downEdges.GroupToDictionary(it => it.First, it => it);
     var upMap = upEdges.GroupToDictionary(it => it.First, it => it);
@@ -81,11 +80,12 @@ public class Day20
       var neighbors = (current.GoingDown ? downMap : upMap)[current.Exit];
       foreach(var next in neighbors)
       {
-        var nextSteps = n + next.Steps;
+        var nextSteps = n + next.Steps + 1; // 1 to go through the portal
         var nextDepth = current.Depth + (next.GoingDown ? 1 : -1);
         if (next.GoingUp && current.Depth == 0)
         {
           if (next.Second != "ZZ") continue;
+          nextSteps -= 1; // -1 because we don't have to go through the portal
           if (seen.TryGetValue(("ZZ", 0, true), out var zz) && zz <= nextSteps) continue;
           seen[("ZZ", 0, true)] = nextSteps;
           open.Enqueue(("ZZ", 0, true, current.Path));
@@ -105,9 +105,13 @@ public class Day20
     public bool GoingUp => !GoingDown;
   }
 
-  public static IEnumerable<Edge> CreateSimpleNodesPairs(string label, Maze maze)
+  public static IEnumerable<Edge> CreateSimpleNodesPairs(string label, Maze maze, bool goingDown)
   {
     var start = maze.PortalExits.Values.Distinct().Single(portal => portal.Label == label).OuterExit;
+    if (!goingDown) {
+      start = maze.PortalExits.Values.Distinct().Single(portal => portal.Label == label).InnerExit;
+      if (start == Point.Zero) yield break;
+    }
     Queue<Point> open = [];
     open.Enqueue(start);
     Dictionary<Point, long> closed = [];
@@ -121,7 +125,11 @@ public class Day20
       if (maze.PortalExits.TryGetValue(current, out var portal))
       {
         var isOuter = portal.OuterExit == current;
-        if (portal.Label != label || !isOuter)
+        if (portal.Label == label && ( (goingDown && isOuter) || (!goingDown && !isOuter) ))
+        {
+          // do nothing
+        }
+        else
         {
           yield return new Edge(label, portal.Label, !isOuter, n);
         }
