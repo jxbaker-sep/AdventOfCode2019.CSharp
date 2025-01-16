@@ -49,19 +49,21 @@ public class Day20
 
   [Theory]
   [InlineData("Day20.Sample.1", 26)]
+  [InlineData("Day20.Sample.3", 396)]
   // [InlineData("Day20", 0)]
   public void Part2(string path, long expected)
   {
     var maze = Convert(AoCLoader.LoadFile(path));
-    List<NodePair> edges = [];
+    List<NodePair> downEdges = [];
+    List<NodePair> upEdges = [];
     foreach(var label in maze.PortalExits.Values.Distinct().Select(it => it.Label))
     {
       var nodes = CreateSimpleNodesPairs(label, maze);
-      edges.AddRange(nodes);
-      edges.AddRange(nodes.Where(it => it.GoingDown).Select(it => new NodePair(it.Second, it.First, false, it.Steps)));
+      downEdges.AddRange(nodes);
+      upEdges.AddRange(nodes.Where(it => it.GoingDown).Select(it => new NodePair(it.Second, it.First, false, it.Steps)));
     }
-    var downMap = edges.Where(edge => edge.GoingDown).GroupToDictionary(it => it.First, it => it);
-    var upMap = edges.Where(edge => edge.GoingUp).GroupToDictionary(it => it.First, it => it);
+    var downMap = downEdges.GroupToDictionary(it => it.First, it => it);
+    var upMap = upEdges.GroupToDictionary(it => it.First, it => it);
 
     Dictionary<(string, int), long> seen = [];
     seen[("AA", 0)] = 0;
@@ -83,8 +85,8 @@ public class Day20
         if (next.GoingUp && current.Depth == 0)
         {
           if (next.Second != "ZZ") continue;
-          if (seen.TryGetValue(("ZZ", 0), out var zz) && zz <= nextSteps) continue;
-          seen[("ZZ", 0)] = nextSteps;
+          if (seen.TryGetValue(("ZZ", 0), out var zz) && zz <= nextSteps - 1) continue;
+          seen[("ZZ", 0)] = nextSteps - 1; // -1 because we never step into zz
           open.Enqueue(("ZZ", 0, next.GoingDown));
           continue;
         }
@@ -114,6 +116,16 @@ public class Day20
     {
       var n = closed[current];
       var neighbors = current.CardinalNeighbors().ToList();
+
+      if (maze.PortalExits.TryGetValue(current, out var portal))
+      {
+        var isOuter = portal.OuterExit == current;
+        if (portal.Label != label || !isOuter)
+        {
+          yield return new NodePair(label, portal.Label, !isOuter, n + 1);
+        }
+      }
+
       foreach(var next in neighbors)
       {
         if (closed.ContainsKey(next)) continue;
@@ -122,14 +134,6 @@ public class Day20
           closed[next] = n + 1;
           open.Enqueue(next);
           continue;
-        }
-        if (maze.PortalExits.TryGetValue(next, out var portal))
-        {
-          closed[next] = n + 1;
-          var isOuter = portal.OuterExit == next;
-          if ((label == "AA" || label == "ZZ") && isOuter) continue;
-          if (portal.Label == label && isOuter) continue;
-          yield return new NodePair(label, portal.Label, !isOuter, n + 1);
         }
       }
     }
