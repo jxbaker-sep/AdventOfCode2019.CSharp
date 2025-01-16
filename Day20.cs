@@ -104,7 +104,7 @@ public class Day20
 
   public static IEnumerable<NodePair> CreateSimpleNodesPairs(string label, Maze maze)
   {
-    var start = maze.PortalExits.Values.Single(portal => portal.Label == label).OuterExit;
+    var start = maze.PortalExits.Values.Distinct().Single(portal => portal.Label == label).OuterExit;
     Queue<Point> open = [];
     open.Enqueue(start);
     Dictionary<Point, long> closed = [];
