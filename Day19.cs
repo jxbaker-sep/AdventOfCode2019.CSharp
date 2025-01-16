@@ -1,6 +1,7 @@
 using System.Net;
 using AdventOfCode2019.CSharp.Utils;
 using FluentAssertions;
+using Microsoft.Z3;
 using Parser;
 using P = Parser.ParserBuiltins;
 
@@ -52,19 +53,18 @@ public class Day19
     yield return (0, new(3,0));
     yield return (0, new(4,0));
     var first = new Point(4, 4);
+    var last = new Point(4, 4);
     for(var y = 5; y < 1_000_000; y++) {
       first += Vector.South;
+      last += Vector.South;
       if (GetPosition(program, first.X, first.Y) != 1) {
         first += Vector.East;
-        if (GetPosition(program, first.X, first.Y) != 1) {
-          throw new ApplicationException("Unchecked assumption");
-        }
       }
-      var lastPlusOne = first + Vector.East;
-      while (GetPosition(program, lastPlusOne.X, lastPlusOne.Y) == 1) {
-        lastPlusOne += Vector.East;
+      last += Vector.East;
+      if (GetPosition(program, last.X, last.Y) != 1) {
+        last -= Vector.East;
       }
-      yield return (lastPlusOne.X - first.X, first);
+      yield return (last.X + 1 - first.X, first);
     }
   }
 
