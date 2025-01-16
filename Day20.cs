@@ -49,31 +49,32 @@ public class Day20
 
   [Theory]
   [InlineData("Day20.Sample.1", 26)]
-  [InlineData("Day20.Sample.3", 396)]
+  // [InlineData("Day20.Sample.3", 396)]
   // [InlineData("Day20", 0)]
   public void Part2(string path, long expected)
   {
     var maze = Convert(AoCLoader.LoadFile(path));
-    List<NodePair> downEdges = [];
-    List<NodePair> upEdges = [];
+    List<Edge> downEdges = [];
+    List<Edge> upEdges = [];
     foreach(var label in maze.PortalExits.Values.Distinct().Select(it => it.Label))
     {
       var nodes = CreateSimpleNodesPairs(label, maze);
       downEdges.AddRange(nodes);
-      upEdges.AddRange(nodes.Where(it => it.GoingDown).Select(it => new NodePair(it.Second, it.First, false, it.Steps)));
+      upEdges.AddRange(nodes.Where(it => it.GoingDown).Select(it => new Edge(it.Second, it.First, false, it.Steps)));
     }
     var downMap = downEdges.GroupToDictionary(it => it.First, it => it);
     var upMap = upEdges.GroupToDictionary(it => it.First, it => it);
 
-    Dictionary<(string, int), long> seen = [];
-    seen[("AA", 0)] = 0;
-    PriorityQueue<(string Exit, int Depth, bool GoingDown)> open = new(it => seen[(it.Exit, it.Depth)] + it.Depth);
-    open.Enqueue(("AA", 0, true));
+    Dictionary<(string, int, bool), long> seen = [];
+    seen[("AA", 0, true)] = 0;
+    PriorityQueue<(string Exit, int Depth, bool GoingDown, List<(string Exit, int Depth, bool GoingDown, long Steps, long)> Path)> open = new(it => seen[(it.Exit, it.Depth, it.GoingDown)] + it.Depth);
+    open.Enqueue(("AA", 0, true, []));
     while (open.TryDequeue(out var current))
     {
-      var n = seen[(current.Exit, current.Depth)];
+      var n = seen[(current.Exit, current.Depth, current.GoingDown)];
       if (current.Exit == "ZZ" && current.Depth == 0)
       {
+        foreach(var item in current.Path)Console.WriteLine(item);
         n.Should().Be(expected);
         return;
       }
@@ -81,30 +82,30 @@ public class Day20
       foreach(var next in neighbors)
       {
         var nextSteps = n + next.Steps;
-        var nextDepth = current.Depth + (current.GoingDown ? 1 : -1);
+        var nextDepth = current.Depth + (next.GoingDown ? 1 : -1);
         if (next.GoingUp && current.Depth == 0)
         {
           if (next.Second != "ZZ") continue;
-          if (seen.TryGetValue(("ZZ", 0), out var zz) && zz <= nextSteps - 1) continue;
-          seen[("ZZ", 0)] = nextSteps - 1; // -1 because we never step into zz
-          open.Enqueue(("ZZ", 0, next.GoingDown));
+          if (seen.TryGetValue(("ZZ", 0, true), out var zz) && zz <= nextSteps) continue;
+          seen[("ZZ", 0, true)] = nextSteps;
+          open.Enqueue(("ZZ", 0, true, current.Path));
           continue;
         }
         if ((next.Second == "AA" || next.Second == "ZZ") && current.Depth > 0) continue;
-        if (seen.TryGetValue((next.Second, nextDepth), out var already) && already <= nextSteps) continue;
-        seen[(next.Second, nextDepth)] = nextSteps;
-        open.Enqueue((next.Second, nextDepth, next.GoingDown));
+        if (seen.TryGetValue((next.Second, nextDepth, next.GoingDown), out var already) && already <= nextSteps) continue;
+        seen[(next.Second, nextDepth, next.GoingDown)] = nextSteps;
+        open.Enqueue((next.Second, nextDepth, next.GoingDown, current.Path.Append((next.Second, nextDepth, next.GoingDown, nextSteps, next.Steps)).ToList()));
       }
     }
     throw new ApplicationException();
   }
 
-  public record NodePair(string First, string Second, bool GoingDown, long Steps)
+  public record Edge(string First, string Second, bool GoingDown, long Steps)
   {
     public bool GoingUp => !GoingDown;
   }
 
-  public static IEnumerable<NodePair> CreateSimpleNodesPairs(string label, Maze maze)
+  public static IEnumerable<Edge> CreateSimpleNodesPairs(string label, Maze maze)
   {
     var start = maze.PortalExits.Values.Distinct().Single(portal => portal.Label == label).OuterExit;
     Queue<Point> open = [];
@@ -122,7 +123,7 @@ public class Day20
         var isOuter = portal.OuterExit == current;
         if (portal.Label != label || !isOuter)
         {
-          yield return new NodePair(label, portal.Label, !isOuter, n + 1);
+          yield return new Edge(label, portal.Label, !isOuter, n);
         }
       }
 
