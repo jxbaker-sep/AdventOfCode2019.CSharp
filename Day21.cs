@@ -37,7 +37,7 @@ public class Day21
   }
 
   [Theory]
-  [InlineData("Day21", 0)]
+  [InlineData("Day21", 1142600034)]
   public void Part2(string path, long expected)
   {
     var program = Convert(AoCLoader.LoadFile(path));
@@ -65,6 +65,8 @@ public class Day21
       "OR H T",
       "AND D T",
       "AND T J",
+      "NOT A T",
+      "OR T J",
       "RUN\n"}.Join("\n").ToCharArray().ToQueue();
     List<long> output = [];
 
