@@ -63,17 +63,18 @@ public class Day20
     }
     var downMap = downEdges.GroupToDictionary(it => it.First, it => it);
     var upMap = upEdges.GroupToDictionary(it => it.First, it => it);
+    var minup = downEdges.Concat(upEdges).Where(edge => edge.GoingUp).Min(edge => edge.Steps);
 
     Dictionary<(string, int, bool), long> seen = [];
     seen[("AA", 0, true)] = 0;
-    PriorityQueue<(string Exit, int Depth, bool GoingDown, List<(string Exit, int Depth, bool GoingDown, long Steps, long)> Path)> open = new(it => seen[(it.Exit, it.Depth, it.GoingDown)] + it.Depth);
+    PriorityQueue<(string Exit, int Depth, bool GoingDown, List<(string Exit, int Depth, bool GoingDown, long Steps, long)> Path)> open = new(it => seen[(it.Exit, it.Depth, it.GoingDown)] + it.Depth * minup);
     open.Enqueue(("AA", 0, true, []));
     while (open.TryDequeue(out var current))
     {
       var n = seen[(current.Exit, current.Depth, current.GoingDown)];
       if (current.Exit == "ZZ" && current.Depth == 0)
       {
-        foreach(var item in current.Path)Console.WriteLine(item);
+        // foreach(var item in current.Path)Console.WriteLine(item);
         n.Should().Be(expected);
         return;
       }
